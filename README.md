@@ -9,6 +9,7 @@ My goal is developing an simple compiler following instructions from the Craftin
 
 - Gnu C Compiler : Compiling tool and generator of executable outputs
 - clangd : Language Server for coding C and C ++ 
+- gdb : Gnu Debugger for dealing with seg faults
 - make : tool for executing build steps defined in Makefile
 - bear : rust tool for generating compile_commands.json dinamically according to the project folder, helps Lsp's identify correctly
 
