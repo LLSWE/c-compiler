@@ -1,0 +1,26 @@
+[
+  {
+    "file": "src/chunk.c",
+    "arguments": [
+      "gcc",
+      "src/chunk.c",
+      "-Iinclude",
+      "-o",
+      "build/clox"
+    ],
+    "directory": "/home/silas/Dev/Projetos/my-first-compiler",
+    "output": "build/clox"
+  },
+  {
+    "file": "main.c",
+    "arguments": [
+      "gcc",
+      "main.c",
+      "-Iinclude",
+      "-o",
+      "build/clox"
+    ],
+    "directory": "/home/silas/Dev/Projetos/my-first-compiler",
+    "output": "build/clox"
+  }
+]
