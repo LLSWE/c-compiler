@@ -43,7 +43,7 @@ static InterpretResult run() {
       printf(" ]");
     }
     printf("\n");
-    disassambleInstruction(vm.chunk, (int)(vm.ip - vm.chunk->code));
+    disassembleInstruction(vm.chunk, (int)(vm.ip - vm.chunk->code));
 #endif /* ifdef DEBUG_TRACE_EXECUTION */
 
     uint8_t instruction;
@@ -80,6 +80,19 @@ static InterpretResult run() {
 #undef BINARY_OP
 }
 InterpretResult interpret(const char *source) {
-  compile(source);
-  return INTERPRET_OK;
+  Chunk chunk;
+  initChunk(&chunk);
+
+  if (!compile(source, &chunk)) {
+    freeChunk(&chunk);
+    return INTERPRET_COMPILE_ERROR;
+  }
+
+  vm.chunk = &chunk;
+  vm.ip = vm.chunk->code;
+
+  InterpretResult result = run();
+
+  freeChunk(&chunk);
+  return result;
 }
