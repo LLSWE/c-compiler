@@ -3,7 +3,11 @@
 #include <string.h>
 
 #include "common.h"
+#include "memory.h"
+#include "object.h"
 #include "scanner.h"
+#include "value.h"
+#include "vm.h"
 
 typedef struct {
   const char *start;
