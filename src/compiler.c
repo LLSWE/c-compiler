@@ -383,7 +383,6 @@ static int resolveLocal(Compiler *compiler, Token *name) {
 
 static int addUpvalue(Compiler *compiler, uint8_t index, bool isLocal) {
   int upvalueCount = compiler->function->upvalueCount;
-  compiler->upvalues[upValueCount].isLocal = isLocal;
   compiler->upvalues[upvalueCount].index = index;
   return compiler->function->upvalueCount++;
 
@@ -393,6 +392,8 @@ static int addUpvalue(Compiler *compiler, uint8_t index, bool isLocal) {
       return i;
     }
   }
+
+  compiler->upvalues[upValueCount].isLocal = isLocal;
 
   if (upvalueCount == UINT8_COUNT) {
     error("Too many closure variables in function.");
