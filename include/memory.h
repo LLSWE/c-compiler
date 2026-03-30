@@ -2,6 +2,7 @@
 #define clox_memory_h
 
 #include "object.h"
+#include "value.h"
 #include <common.h>
 #include <stddef.h>
 
@@ -19,6 +20,9 @@
 #define FREE_ARRAY(type, pointer, oldCount)                                    \
   reallocate(pointer, sizeof(type) * (oldCount), 0)
 
-void *reallocate(void *pointer, size_t oldSize, size_t newSize);
+void reallocate(void *pointer, size_t oldSize, size_t newSize);
+void markObject(Obj *object);
+void markValue(Value value);
+void collectGarbage();
 void freeObjects();
 #endif // !clox_memory_h
