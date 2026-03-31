@@ -6,6 +6,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
+#include <wchar.h>
 
 #define TABLE_MAX_LOAD 0.75
 
@@ -130,6 +131,15 @@ ObjString *tableFindString(Table *table, const char *chars, int length,
     }
 
     index = (index + 1) % table->capacity;
+  }
+}
+
+void tableRemoveWhite(Table *table) {
+  for (int i = 0; i < table->capacity; i++) {
+    Entry *entry = &table->entries[i];
+    if (entry->key != NULL && !entry->key->obj.isMarked) {
+      tableDelete(table, entry->key);
+    }
   }
 }
 
