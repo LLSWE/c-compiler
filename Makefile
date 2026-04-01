@@ -5,5 +5,5 @@ TARGET = src/*.c main.c
 run: main.c
 	gcc $(TARGET) -Iinclude -o build/$(OBJ) && build/$(OBJ)
 
-clean: 
+clean: build/${OBJ} 
 	rm -rf build/$(OBJ)
