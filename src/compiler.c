@@ -494,8 +494,6 @@ static int resolveLocal(Compiler *compiler, Token *name) {
 
 static int addUpvalue(Compiler *compiler, uint8_t index, bool isLocal) {
   int upvalueCount = compiler->function->upvalueCount;
-  compiler->upvalues[upvalueCount].index = index;
-  return compiler->function->upvalueCount++;
 
   for (int i = 0; i < upvalueCount; i++) {
     Upvalue *upvalue = &compiler->upvalues[i];
@@ -504,12 +502,14 @@ static int addUpvalue(Compiler *compiler, uint8_t index, bool isLocal) {
     }
   }
 
-  compiler->upvalues[upvalueCount].isLocal = isLocal;
-
   if (upvalueCount == UINT8_COUNT) {
     error("Too many closure variables in function.");
     return 0;
   }
+
+  compiler->upvalues[upvalueCount].isLocal = isLocal;
+  compiler->upvalues[upvalueCount].index = index;
+  return compiler->function->upvalueCount++;
 }
 
 static int resolveUpvalue(Compiler *compiler, Token *name) {
@@ -714,7 +714,7 @@ static void namedVariable(Token name, bool canAssign) {
   uint8_t getOp, setOp;
   int arg = resolveLocal(current, &name);
   if (arg != -1) {
-    getOp = OP_SET_LOCAL;
+    getOp = OP_GET_LOCAL;
     setOp = OP_SET_LOCAL;
   } else if ((arg = resolveUpvalue(current, &name)) != -1) {
     getOp = OP_GET_UPVALUE;
@@ -809,12 +809,12 @@ ParseRule rules[] = {
     [TOKEN_STAR] = {NULL, binary, PREC_FACTOR},
     [TOKEN_BANG] = {unary, NULL, PREC_NONE},
     [TOKEN_BANG_EQUAL] = {NULL, binary, PREC_NONE},
-    [TOKEN_EQUAL] = {NULL, NULL, PREC_NONE},
-    [TOKEN_EQUAL_EQUAL] = {NULL, binary, PREC_NONE},
-    [TOKEN_GREATER] = {NULL, binary, PREC_NONE},
-    [TOKEN_GREATER_EQUAL] = {NULL, binary, PREC_NONE},
-    [TOKEN_LESS] = {NULL, binary, PREC_NONE},
-    [TOKEN_LESS_EQUAL] = {NULL, binary, PREC_NONE},
+    [TOKEN_EQUAL] = {NULL, NULL, PREC_EQUALITY},
+    [TOKEN_EQUAL_EQUAL] = {NULL, binary, PREC_EQUALITY},
+    [TOKEN_GREATER] = {NULL, binary, PREC_COMPARISON},
+    [TOKEN_GREATER_EQUAL] = {NULL, binary, PREC_COMPARISON},
+    [TOKEN_LESS] = {NULL, binary, PREC_COMPARISON},
+    [TOKEN_LESS_EQUAL] = {NULL, binary, PREC_COMPARISON},
     [TOKEN_IDENTIFIER] = {variable, NULL, PREC_NONE},
     [TOKEN_STRING] = {string, NULL, PREC_NONE},
     [TOKEN_NUMBER] = {number, NULL, PREC_NONE},
