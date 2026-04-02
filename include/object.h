@@ -3,7 +3,7 @@
 
 #include "chunk.h"
 #include "common.h"
-#include "table.h">
+#include "table.h"
 #include "value.h"
 #include <stdbool.h>
 #include <stdint.h>
@@ -11,7 +11,7 @@
 #define OBJ_TYPE(value) (AS_OBJ(value)->type)
 
 #define OBJ_BOUND_METHOD(value) isObjType(value, OBJ_BOUND_METHOD)
-#define IS_CLASS(value) isObj(value, OBJ_CLASS)
+#define IS_CLASS(value) isObjType(value, OBJ_CLASS)
 #define IS_CLOSURE(value) isObjType(value, OBJ_CLOSURE)
 #define IS_FUNCTION(value) isObjType(value, OBJ_FUNCTION)
 #define IS_INSTANCE(value) isObjType(value, OBJ_INSTANCE)
@@ -106,7 +106,7 @@ ObjInstance *newInstance(ObjClass *klass);
 ObjNative *newNative(NativeFn function);
 ObjString *takeString(char *chars, int length);
 ObjString *copyString(const char *chars, int length);
-ObjUpvalue *newUpValue(Value *slot);
+ObjUpvalue *newUpvalue(Value *slot);
 void printObject(Value value);
 
 static inline bool isObjType(Value value, ObjType type) {

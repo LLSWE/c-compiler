@@ -97,12 +97,12 @@ Value pop() {
 
 static Value peek(int distance) { return vm.stackTop[-1 - distance]; }
 
-static bool call(ObjClosure *function, int argCount) {
+static bool call(ObjClosure *closure, int argCount) {
   if (argCount != closure->function->arity) {
     runtimeError("Expected %d arguments but got %d.", closure->function->arity,
                  argCount);
+    return false;
   }
-  return false;
 
   if (vm.frameCount == FRAMES_MAX) {
     runtimeError("Stack overflow.");
@@ -129,16 +129,14 @@ static bool callValue(Value callee, int argCount) {
       Value initializer;
       if (tableGet(&klass->methods, vm.initString, &initializer)) {
         return call(AS_CLOSURE(initializer), argCount);
-      }
-      return true;
-    }
-    case OBJ_CLOSURE:
-      if () {
-        return call(AS_CLOSURE(callee), argCount);
       } else if (argCount != 0) {
         runtimeError("Expected 0 arguments but got %d.", argCount);
         return false;
       }
+      return true;
+    }
+    case OBJ_CLOSURE:
+      return call(AS_CLOSURE(callee), argCount);
     case OBJ_NATIVE: {
       NativeFn native = AS_NATIVE(callee);
       Value result = native(argCount, vm.stackTop - argCount);
@@ -151,6 +149,7 @@ static bool callValue(Value callee, int argCount) {
     }
   }
   runtimeError("Can only call functions and classes");
+  return false;
 }
 
 static bool invokeFromClass(ObjClass *klass, ObjString *name, int argCount) {
@@ -204,7 +203,7 @@ static ObjUpvalue *captureUpvalue(Value *local) {
     return upvalue;
   }
 
-  ObjUpvalue *createdUpvalue = newUpValue(local);
+  ObjUpvalue *createdUpvalue = newUpvalue(local);
   createdUpvalue->next = upvalue;
 
   if (prevUpvalue == NULL) {
@@ -257,8 +256,7 @@ static InterpretResult run() {
 #define READ_BYTE() (*frame->ip++)
 
 #define READ_SHORT()                                                           \
-  (frame->ip += 2, \
-   (uint16_t) ((frame->ip[-2] <<8) | frame->ip[-1])
+  (frame->ip += 2, (uint16_t)((frame->ip[-2] << 8) | frame->ip[-1]))
 #define READ_CONSTANT()                                                        \
   (frame->closure->function->chunk.constants.values[READ_BYTE()])
 
@@ -452,7 +450,6 @@ static InterpretResult run() {
       uint16_t offset = READ_SHORT();
       if (isFalsey(peek(0)))
         frame->ip += offset;
-      vm.ip += offset;
       break;
     }
     case OP_LOOP: {

@@ -68,12 +68,7 @@ typedef enum {
 typedef struct Compiler {
   struct Compiler *enclosing;
   ObjFunction *function;
-};
-
-typedef struct {
-  ObjFunction *function;
   FunctionType type;
-
   Local locals[UINT8_COUNT];
   int localCount;
   Upvalue upvalues[UINT8_COUNT];
@@ -90,7 +85,33 @@ Compiler *current = NULL;
 Chunk *compilingChunk;
 ClassCompiler *currentClass = NULL;
 
+// === Forward Declarations ===
+// chunk
 static Chunk *currentChunk() { return &current->function->chunk; }
+
+// parsing
+static void expression();
+static void statement();
+static void declaration();
+
+// variables
+static void variable(bool canAssign);
+static void defineVariable(uint8_t global);
+static uint8_t parseVariable(const char *errorMessage);
+static void declareVariable();
+static void namedVariable(Token name, bool canAssign);
+
+// utils
+static Token syntheticToken(const char *text);
+static void markInitialized();
+static void forStatement();
+static void ifStatement();
+static void expressionStatement();
+static bool identifiersEqual(Token *a, Token *b);
+static uint8_t identifierConstant(Token *name);
+
+// locals
+static void addLocal(Token name);
 
 static void errorAt(Token *token, const char *message) {
   if (parser.panicMode)
@@ -196,7 +217,7 @@ static void emitConstant(Value value) {
   emitBytes(OP_CONSTANT, makeConstant(value));
 }
 
-static void patchJump() {
+static void patchJump(int offset) {
   int jump = currentChunk()->count - offset - 2;
 
   if (jump > UINT16_MAX) {
@@ -207,7 +228,7 @@ static void patchJump() {
   currentChunk()->code[offset + 1] = jump & 0xff;
 }
 
-static void initCompiler(Compiler *compiler) {
+static void initCompiler(Compiler *compiler, FunctionType type) {
   compiler->enclosing = current;
   compiler->function = NULL;
   compiler->localCount = 0;
@@ -367,6 +388,7 @@ static void funDeclaration() {
 static void printStatement() {
   expression();
   consume(TOKEN_SEMICOLON, "Expect ';' after value.");
+  emitByte(OP_PRINT);
 }
 
 static void returnStatement() {
@@ -378,7 +400,7 @@ static void returnStatement() {
     emitReturn();
   } else {
     if (current->type == TYPE_INITIALIZER) {
-      error("Can't return a value from an initializer.")
+      error("Can't return a value from an initializer.");
     }
     expression();
     consume(TOKEN_SEMICOLON, "Expect ';' after return value.");
@@ -476,13 +498,13 @@ static int addUpvalue(Compiler *compiler, uint8_t index, bool isLocal) {
   return compiler->function->upvalueCount++;
 
   for (int i = 0; i < upvalueCount; i++) {
-    UpValue *upvalue = &compiler->upvalues[i];
+    Upvalue *upvalue = &compiler->upvalues[i];
     if (upvalue->index == index && upvalue->isLocal == isLocal) {
       return i;
     }
   }
 
-  compiler->upvalues[upValueCount].isLocal = isLocal;
+  compiler->upvalues[upvalueCount].isLocal = isLocal;
 
   if (upvalueCount == UINT8_COUNT) {
     error("Too many closure variables in function.");
@@ -757,7 +779,7 @@ static void this_(bool canAssign) {
 static void unary(bool canAssign) {
   TokenType operatorType = parser.previous.type;
 
-  expression();
+  parsePrecedence(PREC_UNARY);
 
   switch (operatorType) {
   case TOKEN_BANG:
@@ -808,7 +830,7 @@ ParseRule rules[] = {
     [TOKEN_PRINT] = {NULL, NULL, PREC_NONE},
     [TOKEN_RETURN] = {NULL, NULL, PREC_NONE},
     [TOKEN_SUPER] = {super_, NULL, PREC_NONE},
-    [TOKEN_THIS] = {this, NULL, PREC_NONE},
+    [TOKEN_THIS] = {this_, NULL, PREC_NONE},
     [TOKEN_TRUE] = {literal, NULL, PREC_NONE},
     [TOKEN_VAR] = {NULL, NULL, PREC_NONE},
     [TOKEN_WHILE] = {NULL, NULL, PREC_NONE},
@@ -846,6 +868,8 @@ static void statement() {
     beginScope();
     block();
     endScope();
+  } else {
+    expressionStatement();
   }
 }
 
@@ -895,6 +919,7 @@ static void forStatement() {
 static void expressionStatement() {
   expression();
   consume(TOKEN_SEMICOLON, "Expect ';' after expression.");
+  emitByte(OP_POP);
 }
 
 static void ifStatement() {
@@ -938,7 +963,7 @@ ObjFunction *compile(const char *source) {
   Compiler compiler;
   initCompiler(&compiler, TYPE_SCRIPT);
   parser.hadError = false;
-  compilingChunk = chunk;
+  compilingChunk = &compiler.function->chunk;
   advance();
 
   while (!match(TOKEN_EOF)) {
