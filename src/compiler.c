@@ -791,8 +791,6 @@ static void unary(bool canAssign) {
   default:
     return;
   }
-  {
-  }
 }
 
 ParseRule rules[] = {
