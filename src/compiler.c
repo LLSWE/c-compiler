@@ -439,8 +439,9 @@ static void synchronize() {
     case TOKEN_PRINT:
     case TOKEN_RETURN:
       return;
-    default:
+    default:;
     }
+    advance();
   }
 }
 
